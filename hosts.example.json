@@ -1,0 +1,17 @@
+{
+  "hosts": [
+    {
+      "id": "local",
+      "name": "This computer",
+      "transport": "local",
+      "allowWrite": false
+    },
+    {
+      "id": "devbox",
+      "name": "Remote computer",
+      "transport": "ssh",
+      "target": "devbox",
+      "allowWrite": false
+    }
+  ]
+}

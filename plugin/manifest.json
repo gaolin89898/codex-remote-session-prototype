@@ -1,0 +1,15 @@
+{
+  "name": "codex-remote-session",
+  "version": "0.3.0",
+  "description": "Connect computer agents through a remote conversation relay.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "\u8fdc\u7a0b\u4f1a\u8bdd",
+    "shortDescription": "\u8fdc\u7a0b\u4f1a\u8bdd\u4e2d\u7ee7",
+    "category": "Productivity",
+    "composerIcon": "./assets/remote-session.svg",
+    "logo": "./assets/remote-session.svg",
+    "capabilities": ["Read", "Write"]
+  }
+}

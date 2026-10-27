@@ -1,0 +1,12 @@
+{
+  "name": "codex-remote-session-lab",
+  "interface": { "displayName": "Codex Remote Session Lab" },
+  "plugins": [
+    {
+      "name": "codex-remote-session",
+      "source": { "source": "local", "path": "./plugins/codex-remote-session" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

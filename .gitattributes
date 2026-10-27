@@ -1,0 +1,2 @@
+* text=auto eol=lf
+plugins/**/server.mjs whitespace=-blank-at-eol
