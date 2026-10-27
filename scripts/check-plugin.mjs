@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchSpec } from '../src/hosts.mjs';
+import { AppServerRpc } from '../src/rpc.mjs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -20,11 +21,12 @@ const prefix = spec.args.slice(0, spec.args.indexOf('app-server'));
 const run = promisify(execFile);
 async function cli(args) {
   return (await run(spec.command, [...prefix, 'plugin', ...args], {
-    cwd: root, env, windowsHide: true, timeout: 60000, maxBuffer: 4 * 1024 * 1024,
+    cwd: testHome, env, windowsHide: true, timeout: 60000, maxBuffer: 4 * 1024 * 1024,
   })).stdout;
 }
 
-const client = new Client({ name: 'plugin-package-check', version: '0.4.0' });
+const client = new Client({ name: 'plugin-package-check', version: '0.4.1' });
+const appServer = new AppServerRpc(spec.command, spec.args, { cwd: testHome, env, timeoutMs: 45000 });
 try {
   await cli(['marketplace', 'add', source]);
   const list = JSON.parse(await cli(['list', '--marketplace', 'codex-remote-session-lab', '--available', '--json']));
@@ -32,10 +34,28 @@ try {
   const installed = JSON.parse(await cli(['add', 'codex-remote-session@codex-remote-session-lab', '--json']));
   const mcp = JSON.parse(await readFile(path.join(installed.installedPath, '.mcp.json'), 'utf8')).mcpServers.codex_remote;
   assert.equal(mcp.command, 'node');
-  assert.deepEqual(mcp.args, ['${PLUGIN_ROOT}/server.mjs']);
+  assert.deepEqual(mcp.args, ['./server.mjs']);
+  assert.equal(mcp.cwd, '.');
   assert.equal(mcp.env, undefined);
-  const args = mcp.args.map((arg) => arg.replaceAll('${PLUGIN_ROOT}', installed.installedPath));
-  await client.connect(new StdioClientTransport({ command: mcp.command, args, env }));
+  // Exercise Codex's plugin parser and discovery, including its path resolution.
+  await appServer.start();
+  const catalog = await appServer.request('mcpServerStatus/list', {
+    serverName: 'codex_remote', detail: 'toolsAndAuthOnly',
+  });
+  const discoveredServer = catalog.data.find((server) => server.name === 'codex_remote');
+  assert.ok(discoveredServer, 'Codex did not discover the installed MCP server');
+  assert.equal(discoveredServer.toolsError, null);
+  assert.equal(discoveredServer.pluginId, 'codex-remote-session@codex-remote-session-lab');
+  assert.deepEqual(discoveredServer.serverCapabilities.extensions['openai/settings'], {
+    readTool: 'remote_settings_read', updateTool: 'remote_settings_update',
+  });
+  const discoveredTools = Object.values(discoveredServer.tools);
+  for (const name of ['remote_settings_read', 'remote_settings_update']) {
+    assert.ok(discoveredTools.some((tool) => tool.name === name), `Codex did not discover ${name}`);
+  }
+  await client.connect(new StdioClientTransport({
+    command: mcp.command, args: mcp.args, cwd: path.resolve(installed.installedPath, mcp.cwd), env,
+  }));
   const tools = (await client.listTools()).tools;
   assert.equal(tools.length, 11);
   assert.deepEqual(client.getServerCapabilities().extensions['openai/settings'], {
@@ -47,10 +67,12 @@ try {
   assert.equal(client.getServerCapabilities().resources, undefined);
   const discovered = await client.callTool({ name: 'remote_hosts', arguments: {} });
   assert.deepEqual(JSON.parse(discovered.content[0].text).hosts, []);
-  console.log(JSON.stringify({ source, version: installed.plugin?.version || '0.4.0', nativeSettings: true,
+  console.log(JSON.stringify({ source, version: discoveredServer.serverInfo.version, nativeSettings: true,
+    codexAppServerDiscoveredSettings: true,
     marketplaceDiscovered: true, packagedMcpConnected: true, defaultHosts: [],
     tools: tools.map((tool) => tool.name) }, null, 2));
 } finally {
   await client.close();
-  await rm(testHome, { recursive: true, force: true });
+  await appServer.close();
+  await rm(testHome, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }

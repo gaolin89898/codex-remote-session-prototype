@@ -3,8 +3,9 @@
     "codex_remote": {
       "command": "node",
       "args": [
-        "${PLUGIN_ROOT}/server.mjs"
+        "./server.mjs"
       ],
+      "cwd": ".",
       "startup_timeout_sec": 30,
       "tool_timeout_sec": 90
     }

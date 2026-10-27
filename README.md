@@ -105,7 +105,7 @@ npm run check:plugin
 
 `build` regenerates the committed portable plugin and the ignored `dist` output. It does not read deployment configuration or embed machine paths. Commit the generated plugin whenever its source changes.
 
-`check:plugin` installs into a temporary, empty Codex home and verifies seven conversation tools, four app-only settings tools, the native settings capability, no HTML resource, and no configured hosts. It removes the temporary installation afterward. To check the published Git marketplace:
+`check:plugin` installs into a temporary, empty Codex home and uses Codex app-server discovery to verify the installed server and native settings tools. It also verifies seven conversation tools, four app-only settings tools, no HTML resource, and no configured hosts. The check runs outside the plugin directory so incorrect relative paths fail. It removes the temporary installation afterward. To check the published Git marketplace:
 
 ```powershell
 npm run check:plugin -- --source=git@github.com:gaolin89898/codex-remote-session-prototype.git

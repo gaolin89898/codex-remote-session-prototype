@@ -26,7 +26,7 @@ await cp(path.join(root, 'plugin/skills'), path.join(output, 'skills'), { recurs
 await writeFile(path.join(output, '.mcp.json'), `${JSON.stringify({
   mcpServers: {
     codex_remote: {
-      command: 'node', args: ['${PLUGIN_ROOT}/server.mjs'],
+      command: 'node', args: ['./server.mjs'], cwd: '.',
       startup_timeout_sec: 30, tool_timeout_sec: 90,
     },
   },
