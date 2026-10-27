@@ -1,6 +1,6 @@
 {
   "name": "codex-remote-session-prototype",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "type": "module",
   "repository": {
@@ -15,10 +15,12 @@
     "test": "node --test test/*.test.mjs",
     "build": "node scripts/build.mjs",
     "check:plugin": "node scripts/check-plugin.mjs",
+    "check:ui": "node scripts/check-connection-ui.mjs",
     "deploy": "node scripts/deploy.mjs",
     "mcp": "node src/mcp.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@openai/mcp-extensions": "0.2.1",
     "lucide-react": "1.61.0",
@@ -28,6 +30,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "playwright-core": "1.64.1"
   }
 }

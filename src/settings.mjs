@@ -7,6 +7,8 @@ import { createSettings } from '@openai/mcp-extensions/server';
 import { configDirectory, connectionConfig } from './config.mjs';
 import { validateHosts } from './hosts.mjs';
 import { RelayConnection } from './relay-connection.mjs';
+import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
+import { connectionTestUri, registerConnectionTestView, testConnection } from './connection-test.mjs';
 
 export const settingsFields = {
   mode: { title: '\u8fde\u63a5\u65b9\u5f0f', schema: z.enum(['\u672a\u8fde\u63a5', 'SSH \u76f4\u8fde', '\u670d\u52a1\u4e2d\u7ee7', '\u914d\u7f6e\u6587\u4ef6']) },
@@ -138,16 +140,12 @@ export function registerSettings(server, store, bridge) {
       return values;
     },
   });
-  server.registerTool('remote_test_connection', {
-    title: '\u6d4b\u8bd5\u8fde\u63a5', inputSchema: {}, _meta: appOnly,
+  registerConnectionTestView(server);
+  registerAppTool(server, 'remote_test_connection', {
+    title: '\u6d4b\u8bd5\u8fde\u63a5', inputSchema: {},
+    _meta: { ui: { visibility: ['app'], resourceUri: connectionTestUri } },
     annotations: { readOnlyHint: true, openWorldHint: true },
-  }, async () => {
-    try {
-      const result = await bridge.call('testConnection');
-      return { structuredContent: result, content: [{ type: 'text', text: `\u8fde\u63a5\u6210\u529f\uff0c\u53ef\u7528\u7535\u8111 ${result.computers} \u53f0\u3002` }] };
-    }
-    catch (error) { return { isError: true, content: [{ type: 'text', text: error.message }] }; }
-  });
+  }, () => testConnection(bridge));
   server.registerTool('remote_settings_reset', {
     title: '\u6e05\u9664\u8bbe\u7f6e', inputSchema: {}, _meta: appOnly,
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },

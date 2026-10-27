@@ -28,6 +28,13 @@ export class RelayConnection extends EventEmitter {
         handshakeTimeout: 10000, maxPayload: 16 * 1024 * 1024,
       });
       const timer = setTimeout(() => { socket.terminate(); reject(new Error('Relay connection timed out')); }, 10000);
+      socket.on('unexpected-response', (_request, response) => {
+        clearTimeout(timer);
+        const status = response.statusCode;
+        reject(new Error(status === 401 || status === 403 ? 'Relay authentication failed' :
+          status === 404 ? 'Relay endpoint not found' : 'Relay rejected the connection'));
+        socket.terminate();
+      });
       socket.on('open', () => {
         if (this.options.role === 'agent') this.send({ type: 'hello', name: this.options.name, allowWrite: this.options.allowWrite === true });
       });
@@ -53,6 +60,29 @@ export class RelayConnection extends EventEmitter {
         for (const request of this.pending.values()) { clearTimeout(request.timer); request.reject(new Error('Relay disconnected')); }
         this.pending.clear(); this.emit('disconnect');
       });
+    });
+  }
+  async check() {
+    await this.start();
+    const socket = this.socket;
+    const probe = randomUUID();
+    await new Promise((resolve, reject) => {
+      const finish = (error) => {
+        clearTimeout(timer);
+        socket.off('pong', pong);
+        socket.off('close', disconnected);
+        if (error) reject(error); else resolve();
+      };
+      const pong = (data) => { if (data.toString() === probe) finish(); };
+      const disconnected = () => finish(new Error('Relay disconnected'));
+      const timer = setTimeout(() => {
+        finish(new Error('Relay connection timed out'));
+        socket.terminate();
+      }, 10000);
+      socket.on('pong', pong);
+      socket.once('close', disconnected);
+      try { socket.ping(probe, (error) => { if (error) finish(new Error('Relay connection failed')); }); }
+      catch { finish(new Error('Relay connection failed')); }
     });
   }
   send(message) {

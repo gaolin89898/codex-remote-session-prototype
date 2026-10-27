@@ -57,7 +57,7 @@ test('SSH settings keep stable computer IDs and apply without restarting the plu
   const changed = await bridge.call('listHosts');
   assert.equal(changed[1].id, hosts[0].id);
   assert.equal(changed[0].allowWrite, true);
-  assert.deepEqual(await bridge.call('testConnection'), { connected: true, computers: 2 });
+  assert.deepEqual(await bridge.call('testConnection'), { connected: true, computers: 2, mode: 'direct' });
   assert.equal(closed, 2);
   await store.reset();
   assert.deepEqual(await bridge.call('listHosts'), []);
@@ -151,7 +151,10 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     assert.equal(nativeTools.length, 4);
     assert.ok(nativeTools.every((tool) => tool._meta.ui.visibility.join() === 'app'));
     const unconfigured = await client.callTool({ name: 'remote_test_connection', arguments: {} });
-    assert.equal(unconfigured.isError, true);
+    assert.equal(unconfigured.isError, undefined);
+    assert.equal(unconfigured.structuredContent.connected, false);
+    assert.match(unconfigured.structuredContent.message, /\u8fde\u63a5\u65b9\u5f0f/);
+    assert.ok(unconfigured.structuredContent.elapsedMs >= 0);
     const token = 'native-settings-test-token-'.repeat(2);
     const updated = await client.callTool({ name: capability.updateTool, arguments: { set: {
       mode: 'SSH \u76f4\u8fde', sshTargets: 'office', relayToken: token, deviceName: '\u529e\u516c\u7535\u8111',
@@ -172,6 +175,19 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     } } });
     const refused = await client.callTool({ name: 'remote_hosts', arguments: {} });
     assert.equal(refused.isError, true);
+    const failedTest = await client.callTool({ name: 'remote_test_connection', arguments: {} });
+    assert.equal(failedTest.isError, undefined);
+    assert.equal(failedTest.structuredContent.connected, false);
+    assert.match(failedTest.structuredContent.message, /\u4ee4\u724c\u9a8c\u8bc1\u5931\u8d25/);
+    assert.equal(JSON.stringify(failedTest).includes(token), false);
+    await client.callTool({ name: capability.updateTool, arguments: { set: { relayToken: 'c'.repeat(32) } } });
+    const connected = await client.callTool({ name: 'remote_test_connection', arguments: {} });
+    assert.equal(connected.structuredContent.connected, true);
+    assert.equal(connected.structuredContent.mode, 'relay');
+    assert.equal(connected.structuredContent.computers, 0);
+    assert.match(connected.structuredContent.hint, /\u542f\u52a8\u8bbe\u5907\u4ee3\u7406/);
+    const repeated = await client.callTool({ name: 'remote_test_connection', arguments: {} });
+    assert.equal(repeated.structuredContent.connected, true);
     const editable = await client.callTool({ name: capability.readTool, arguments: {} });
     assert.equal(editable.isError, undefined);
     await client.callTool({ name: 'remote_settings_reset', arguments: {} });

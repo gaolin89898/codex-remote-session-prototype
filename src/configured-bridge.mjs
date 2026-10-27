@@ -27,13 +27,13 @@ export class ConfiguredBridge {
       const { bridge, config } = record;
       try {
         if (method === 'testConnection') {
-          if (config.relay) await bridge.connection.start();
+          if (config.relay) await bridge.connection.check();
           const hosts = bridge.listHosts();
           if (!config.relay && !hosts.length) throw new Error('Choose a connection in plugin settings');
           if (!config.relay) {
             for (const host of hosts) await (await bridge.connection(host.id)).request('model/list', {});
           }
-          return { connected: true, computers: hosts.length };
+          return { connected: true, computers: hosts.length, mode: config.relay ? 'relay' : 'direct' };
         }
         return await bridge[method](...args);
       } finally { if (--record.users === 0) record.release(); }

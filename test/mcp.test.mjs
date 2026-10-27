@@ -30,7 +30,16 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     });
     assert.equal(tools.tools.some((tool) => ['remote_open', 'remote_native_open'].includes(tool.name)), false);
     assert.equal(tools.tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
-    assert.equal(client.getServerCapabilities().resources, undefined);
+    const resources = (await client.listResources()).resources;
+    assert.deepEqual(resources.map((resource) => resource.uri), ['ui://remote-session/connection-test.html']);
+    const testTool = tools.tools.find((tool) => tool.name === 'remote_test_connection');
+    assert.equal(testTool._meta.ui.resourceUri, resources[0].uri);
+    assert.deepEqual(testTool._meta.ui.visibility, ['app']);
+    assert.ok(tools.tools.filter((tool) => !/remote_(settings|test_connection)/.test(tool.name)).every((tool) => !tool._meta?.ui));
+    const view = (await client.readResource({ uri: resources[0].uri })).contents[0];
+    assert.equal(view.mimeType, 'text/html;profile=mcp-app');
+    assert.match(view.text, /<html lang="zh-CN">/);
+    assert.deepEqual(view._meta.ui.csp, { connectDomains: [], resourceDomains: [] });
     const hosts = await client.callTool({ name: 'remote_hosts', arguments: {} });
     assert.equal(JSON.parse(hosts.content[0].text).hosts[0].id, 'local');
     const denied = await client.callTool({ name: 'remote_prompt', arguments: {

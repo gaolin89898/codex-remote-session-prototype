@@ -102,7 +102,7 @@ test('relay times out unanswered requests and prevents duplicate agent identity'
   const { url } = await setup(t, { timeoutMs: 60 });
   await agentFor(t, url, { threads: () => new Promise(() => {}), close: async () => {} });
   const duplicate = new RelayConnection({ url, role: 'agent', token: 'a'.repeat(32), id: 'pc', name: 'Duplicate' });
-  await assert.rejects(duplicate.start(), /failed|disconnected/);
+  await assert.rejects(duplicate.start(), /rejected/);
   await duplicate.close();
   const client = await clientFor(t, url);
   await assert.rejects(client.request('pc', 'threads'), /timed out/);

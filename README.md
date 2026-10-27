@@ -36,6 +36,8 @@ Open this plugin's settings in Codex to configure the connection. The native set
 
 Changes are saved under `remote-session/settings.json` in your Codex home, outside the installed plugin. They take effect without restarting the plugin. Blank token input preserves the saved token; clearing settings removes it and disconnects the old connection. Connection tests do not send prompts or start model inference. Settings remain available when the relay is offline.
 
+The connection-test button opens a compact result dialog with progress, success or failure, elapsed time, and a retry action. A reachable relay with no online computers is reported separately. Relay checks verify a fresh response; authentication failures, wrong endpoint paths, and timeouts have visible diagnostics. Save settings before testing.
+
 The computer agent uses the device name saved by the plugin. Changes are broadcast to connected viewers without disconnecting the agent or changing its ID. When no custom name is saved, the agent uses its configuration's `name`, or the computer's hostname. Updating the name does not start a computer agent; run the agent on each computer you want to make available. Relays must run version 0.4.2 or newer to broadcast name changes.
 
 The plugin advertises the `openai/settings` extension for the host to render the form; it does not launch a separate conversation page or web server. This requires a Codex desktop version supporting native plugin settings. Settings tools are restricted to the app UI and do not return saved tokens.
@@ -106,9 +108,11 @@ npm test
 npm run check:plugin
 ```
 
+`npm run check:ui` checks the connection-test dialog in a simulated MCP App host with desktop and narrow viewports, light and dark themes, loading, success, offline devices, errors, and retry. It uses Microsoft Edge on Windows; set `PLAYWRIGHT_CHANNEL` to another installed Chromium channel when needed. Screenshots are written under ignored `.local/connection-ui`. This does not automate the Codex desktop UI.
+
 `build` regenerates the committed portable plugin and the ignored `dist` output. It does not read deployment configuration or embed machine paths. Commit the generated plugin whenever its source changes.
 
-`check:plugin` installs into a temporary, empty Codex home and uses Codex app-server discovery to verify the installed server and native settings tools. It also verifies seven conversation tools, four app-only settings tools, no HTML resource, and no configured hosts. The check runs outside the plugin directory so incorrect relative paths fail. It removes the temporary installation afterward. To check the published Git marketplace:
+`check:plugin` installs into a temporary, empty Codex home and uses Codex app-server discovery to verify the installed server and native settings tools. It also verifies seven conversation tools, four app-only settings tools, one settings-only connection-test resource, and no configured hosts. Conversation tools have no UI entrypoints. The check runs outside the plugin directory so incorrect relative paths fail. It removes the temporary installation afterward. To check the published Git marketplace:
 
 ```powershell
 npm run check:plugin -- --source=git@github.com:gaolin89898/codex-remote-session-prototype.git
