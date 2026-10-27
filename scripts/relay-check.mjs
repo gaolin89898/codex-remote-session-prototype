@@ -14,7 +14,7 @@ const config = JSON.parse(await readFile(configFile, 'utf8'));
 const observer = await new RelayBridge({ ...config, viewerId: 'deployment-verifier' }).startConnection();
 const local = new SessionBridge([{ id: 'local', transport: 'local' }]);
 const own = await new RelayBridge(config).startConnection();
-const client = new Client({ name: 'relay-deployment-check', version: '0.3.0' });
+const client = new Client({ name: 'relay-deployment-check', version: '0.4.0' });
 const report = { mode: 'relay', checks: [] };
 try {
   if (!observer.listHosts().length) await new Promise((resolve, reject) => {
@@ -39,7 +39,7 @@ try {
   delete env.CODEX_REMOTE_HOSTS_FILE;
   await client.connect(new StdioClientTransport({ command: launch.command, args, env, stderr: 'pipe' }));
   const tools = (await client.listTools()).tools;
-  assert.equal(tools.length, 7);
+  assert.equal(tools.length, 11);
   assert.equal(tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
   assert.equal(client.getServerCapabilities().resources, undefined);
   const discovered = await client.callTool({ name: 'remote_hosts', arguments: {} });

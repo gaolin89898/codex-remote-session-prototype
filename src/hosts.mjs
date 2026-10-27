@@ -5,11 +5,15 @@ export async function loadHosts(file = process.env.CODEX_REMOTE_HOSTS_FILE) {
   const config = file ? JSON.parse(await readFile(file, 'utf8')) : {
     hosts: [],
   };
-  if (!Array.isArray(config.hosts) || config.hosts.length > 20) {
+  return validateHosts(config.hosts);
+}
+
+export function validateHosts(hosts) {
+  if (!Array.isArray(hosts) || hosts.length > 20) {
     throw new Error('Host configuration must contain 0 to 20 hosts');
   }
   const ids = new Set();
-  for (const host of config.hosts) {
+  for (const host of hosts) {
     if (!/^[a-zA-Z0-9_-]{1,64}$/.test(host.id) || ids.has(host.id)) throw new Error('Invalid or duplicate host ID');
     ids.add(host.id);
     if (!['local', 'ssh'].includes(host.transport)) throw new Error(`Unsupported transport for ${host.id}`);
@@ -25,7 +29,7 @@ export async function loadHosts(file = process.env.CODEX_REMOTE_HOSTS_FILE) {
       throw new Error(`Remote host ${host.id} cannot use the local native connection`);
     }
   }
-  return config.hosts;
+  return hosts;
 }
 
 export async function launchSpec(host, env = process.env) {

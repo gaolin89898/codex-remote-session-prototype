@@ -24,7 +24,7 @@ async function cli(args) {
   })).stdout;
 }
 
-const client = new Client({ name: 'plugin-package-check', version: '0.3.0' });
+const client = new Client({ name: 'plugin-package-check', version: '0.4.0' });
 try {
   await cli(['marketplace', 'add', source]);
   const list = JSON.parse(await cli(['list', '--marketplace', 'codex-remote-session-lab', '--available', '--json']));
@@ -37,12 +37,17 @@ try {
   const args = mcp.args.map((arg) => arg.replaceAll('${PLUGIN_ROOT}', installed.installedPath));
   await client.connect(new StdioClientTransport({ command: mcp.command, args, env }));
   const tools = (await client.listTools()).tools;
-  assert.equal(tools.length, 7);
+  assert.equal(tools.length, 11);
+  assert.deepEqual(client.getServerCapabilities().extensions['openai/settings'], {
+    readTool: 'remote_settings_read', updateTool: 'remote_settings_update',
+  });
+  const settings = await client.callTool({ name: 'remote_settings_read', arguments: {} });
+  assert.equal(settings.structuredContent.values.mode, '\u672a\u8fde\u63a5');
   assert.equal(tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
   assert.equal(client.getServerCapabilities().resources, undefined);
   const discovered = await client.callTool({ name: 'remote_hosts', arguments: {} });
   assert.deepEqual(JSON.parse(discovered.content[0].text).hosts, []);
-  console.log(JSON.stringify({ source, version: installed.plugin?.version || '0.3.0',
+  console.log(JSON.stringify({ source, version: installed.plugin?.version || '0.4.0', nativeSettings: true,
     marketplaceDiscovered: true, packagedMcpConnected: true, defaultHosts: [],
     tools: tools.map((tool) => tool.name) }, null, 2));
 } finally {

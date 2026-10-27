@@ -2,7 +2,7 @@
 
 A Codex desktop plugin for reading and continuing conversations on computers you configure. Connect directly over SSH or through a self-hosted relay. No server, account, token, or local computer is configured by default.
 
-The plugin provides seven conversation tools through MCP. It has no separate page. Integration with the desktop's native conversation interface and computer selector remains unfinished.
+The plugin provides seven conversation tools through MCP and a native plugin settings form. Integration with the desktop's native conversation interface and computer selector remains unfinished.
 
 ## Install from the Git marketplace
 
@@ -24,9 +24,22 @@ You can also add `https://github.com/gaolin89898/codex-remote-session-prototype.
 
 This is a community Git marketplace, not an official OpenAI directory listing.
 
+## Plugin settings
+
+Open this plugin's settings in Codex to configure the connection. The native settings form includes:
+
+- Connection mode: disconnected, direct SSH, relay, or an external configuration file.
+- SSH aliases or `user@host` targets, separated by commas, and a conversation-write toggle.
+- Relay URL, a write-only controller token, and the viewing computer's optional agent ID.
+- An advanced configuration file path, a connection test, and a clear-settings action.
+
+Changes are saved under `remote-session/settings.json` in your Codex home, outside the installed plugin. They take effect without restarting the plugin. Blank token input preserves the saved token; clearing settings removes it and disconnects the old connection. Connection tests do not send prompts or start model inference. Settings remain available when the relay is offline.
+
+The plugin advertises the `openai/settings` extension for the host to render the form; it does not launch a separate conversation page or web server. This requires a Codex desktop version supporting native plugin settings. Settings tools are restricted to the app UI and do not return saved tokens.
+
 ## Configure a computer
 
-Create `remote-session/hosts.json` inside your Codex home directory (`~/.codex` by default, or `CODEX_HOME` when set):
+For file-based configuration, create `remote-session/hosts.json` inside your Codex home directory (`~/.codex` by default, or `CODEX_HOME` when set):
 
 ```json
 {
@@ -44,7 +57,7 @@ Create `remote-session/hosts.json` inside your Codex home directory (`~/.codex` 
 
 `target` is your own SSH alias or `user@host`. Configure SSH key authentication and install and authenticate Codex on that computer. Check `ssh devbox codex --version`; the bridge uses batch mode and cannot ask for a password. The local transport is opt-in; see `hosts.example.json`.
 
-Restart the plugin connection after changing configuration. `remote_hosts` returns an empty list until you configure a computer. Nothing reads this repository's `.local` files automatically.
+Select the configuration-file connection mode and enter that file's absolute path in plugin settings. Existing `hosts.json` or `relay.json` files are discovered automatically until settings are first saved. `remote_hosts` returns an empty list until you configure a computer. Nothing reads this repository's `.local` files automatically.
 
 Set `allowWrite: true` to permit starting conversations, sending messages, and interrupting turns. Shell and file access still use the read-only sandbox. Interactive approvals are declined. Avoid controlling the same conversation from several clients; this prototype cannot guarantee ownership detection across independent app-server processes.
 
@@ -77,7 +90,7 @@ On each viewing computer, establish its own SSH tunnel:
 ssh -NT -o ExitOnForwardFailure=yes -L 127.0.0.1:3425:127.0.0.1:3420 my-relay
 ```
 
-Copy the generated `.local/relay-controller.json` securely to `remote-session/relay.json` inside that viewing computer's Codex home. Set `viewerId` to that viewing computer's agent ID, or omit it if the viewer has no agent. A matching agent is hidden from its own discovery results. Keep either `hosts.json` or `relay.json` in the configuration directory. Each additional agent needs its own identity and token registered in the relay configuration. Never commit tokens.
+Enter the generated controller URL and token in the viewing computer's plugin settings, or securely copy `.local/relay-controller.json` to a private file and select it in configuration-file mode. Set `viewerId` to that viewing computer's agent ID, or omit it if the viewer has no agent. A matching agent is hidden from its own discovery results. Each additional agent needs its own identity and token registered in the relay configuration. Never commit tokens.
 
 The controller file contains `url`, `token`, and optional `viewerId` and `nativeHosts`. Use `wss://` for direct network connections, or `ws://127.0.0.1` through an encrypted tunnel. The relay enforces identity, read-only policy, request timeouts, and connection limits. It does not need a Codex login.
 
@@ -92,7 +105,7 @@ npm run check:plugin
 
 `build` regenerates the committed portable plugin and the ignored `dist` output. It does not read deployment configuration or embed machine paths. Commit the generated plugin whenever its source changes.
 
-`check:plugin` installs into a temporary, empty Codex home and verifies seven backend tools, no HTML resource, and no configured hosts. It removes the temporary installation afterward. To check the published Git marketplace:
+`check:plugin` installs into a temporary, empty Codex home and verifies seven conversation tools, four app-only settings tools, the native settings capability, no HTML resource, and no configured hosts. It removes the temporary installation afterward. To check the published Git marketplace:
 
 ```powershell
 npm run check:plugin -- --source=git@github.com:gaolin89898/codex-remote-session-prototype.git

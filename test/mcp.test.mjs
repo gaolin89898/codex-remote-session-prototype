@@ -24,7 +24,10 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     t.after(async () => { await client.close(); await rm(home, { recursive: true, force: true }); });
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 7);
+    assert.equal(tools.tools.length, 11);
+    assert.deepEqual(client.getServerCapabilities().extensions['openai/settings'], {
+      readTool: 'remote_settings_read', updateTool: 'remote_settings_update',
+    });
     assert.equal(tools.tools.some((tool) => ['remote_open', 'remote_native_open'].includes(tool.name)), false);
     assert.equal(tools.tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
     assert.equal(client.getServerCapabilities().resources, undefined);

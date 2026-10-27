@@ -1,7 +1,7 @@
 {
   "name": "codex-remote-session",
-  "version": "0.3.0",
-  "description": "Connect computer agents through a remote conversation relay.",
+  "version": "0.4.0",
+  "description": "Read or continue Codex conversations over SSH or a self-hosted relay.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {

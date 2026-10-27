@@ -4,6 +4,7 @@ import { nativeThreadUrl } from './native-links.mjs';
 
 export class RelayBridge {
   constructor(config) {
+    if (Object.values(config.nativeHosts || {}).some((id) => id === 'local' || typeof id !== 'string' || !/^[a-zA-Z0-9_.:~!*'()%\-]{1,300}$/.test(id))) throw new Error('Relay native mappings must refer to remote desktop connections');
     this.config = config;
     this.connection = new RelayConnection(config);
     this.retries = 0;
@@ -17,7 +18,10 @@ export class RelayBridge {
       this.connection.start().catch(() => this.reconnect());
     }, Math.min(30000, (this.config.reconnectDelayMs || 1000) * 2 ** Math.min(this.retries++, 5)));
   }
-  async startConnection() { await this.connection.start(); return this; }
+  async startConnection() {
+    try { await this.connection.start(); return this; }
+    catch (error) { await this.close(); throw error; }
+  }
   listHosts() {
     return this.connection.hosts.filter((host) => host.id !== this.config.viewerId).map((host) => ({
       ...host, transport: 'relay', remote: true, nativeHostId: this.config.nativeHosts?.[host.id] || null,
@@ -52,6 +56,5 @@ export class RelayBridge {
 
 export async function loadRelayBridge(file) {
   const config = JSON.parse(await readFile(file, 'utf8'));
-  if (Object.values(config.nativeHosts || {}).some((id) => id === 'local' || typeof id !== 'string' || !/^[a-zA-Z0-9_.:~!*'()%\-]{1,300}$/.test(id))) throw new Error('Relay native mappings must refer to remote desktop connections');
   return new RelayBridge(config).startConnection();
 }
