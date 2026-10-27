@@ -13,6 +13,13 @@ codex plugin marketplace add gaolin89898/codex-remote-session-prototype --ref ma
 codex plugin add codex-remote-session@codex-remote-session-lab
 ```
 
+If HTTPS is unavailable and GitHub SSH authentication is configured, use:
+
+```powershell
+codex plugin marketplace add git@github.com:gaolin89898/codex-remote-session-prototype.git --ref main
+codex plugin add codex-remote-session@codex-remote-session-lab
+```
+
 You can also add `https://github.com/gaolin89898/codex-remote-session-prototype.git` as a Git marketplace in Codex. The committed package at `plugins/codex-remote-session` includes its dependencies; installation does not require cloning the source or running `npm install`.
 
 This is a community Git marketplace, not an official OpenAI directory listing.
