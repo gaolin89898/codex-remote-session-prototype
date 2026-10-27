@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
+import { hostname } from 'node:os';
 import { z } from 'zod';
 import { createSettings } from '@openai/mcp-extensions/server';
 import { configDirectory, connectionConfig } from './config.mjs';
@@ -9,6 +10,7 @@ import { RelayConnection } from './relay-connection.mjs';
 
 export const settingsFields = {
   mode: { title: '\u8fde\u63a5\u65b9\u5f0f', schema: z.enum(['\u672a\u8fde\u63a5', 'SSH \u76f4\u8fde', '\u670d\u52a1\u4e2d\u7ee7', '\u914d\u7f6e\u6587\u4ef6']) },
+  deviceName: { title: '\u8bbe\u5907\u540d\u79f0', schema: z.string().trim().max(120).regex(/^[^\x00-\x1f\x7f]*$/) },
   sshTargets: { title: 'SSH \u4e3b\u673a', schema: z.string().max(4096), description: '\u591a\u53f0\u4e3b\u673a\u7528\u9017\u53f7\u5206\u9694' },
   allowWrite: { title: '\u5141\u8bb8\u53d1\u9001\u548c\u505c\u6b62\u4f1a\u8bdd', schema: z.boolean() },
   relayUrl: { title: '\u4e2d\u7ee7\u5730\u5740', schema: z.string().max(2048) },
@@ -17,7 +19,7 @@ export const settingsFields = {
   configFile: { title: '\u914d\u7f6e\u6587\u4ef6\u8def\u5f84', schema: z.string().max(4096) },
 };
 const schema = z.strictObject(Object.fromEntries(Object.entries(settingsFields).map(([key, field]) => [key, field.schema])));
-const defaults = { mode: '\u672a\u8fde\u63a5', sshTargets: '', allowWrite: false, relayUrl: '', relayToken: '', viewerId: '', configFile: '' };
+const defaults = { mode: '\u672a\u8fde\u63a5', deviceName: '', sshTargets: '', allowWrite: false, relayUrl: '', relayToken: '', viewerId: '', configFile: '' };
 const appOnly = { ui: { visibility: ['app'] } };
 
 function sshHosts(value) {
@@ -37,14 +39,17 @@ export class SettingsStore {
   }
   async load() {
     if (!this.env.CODEX_REMOTE_HOSTS_FILE && !this.env.CODEX_REMOTE_RELAY_FILE) {
-      try { return schema.parse(JSON.parse(await readFile(this.file, 'utf8'))); }
+      try { return schema.parse({ deviceName: '', ...JSON.parse(await readFile(this.file, 'utf8')) }); }
       catch (error) { if (error.code !== 'ENOENT') throw new Error('Saved plugin settings are invalid'); }
     }
     const config = await connectionConfig(this.env);
     const file = config.hosts || config.relay;
     return { ...defaults, ...(file ? { mode: '\u914d\u7f6e\u6587\u4ef6', configFile: file } : {}) };
   }
-  async read() { return { ...await this.load(), relayToken: '' }; }
+  async read() {
+    const values = await this.load();
+    return { ...values, deviceName: values.deviceName || hostname(), relayToken: '' };
+  }
   validate(values) {
     schema.parse(values);
     if (values.sshTargets) sshHosts(values.sshTargets);
@@ -62,7 +67,7 @@ export class SettingsStore {
       await writeFile(temporary, `${JSON.stringify(values, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
       await rename(temporary, this.file);
     } finally { await rm(temporary, { force: true }); }
-    return { ...values, relayToken: '' };
+    return { ...values, deviceName: values.deviceName || hostname(), relayToken: '' };
   }
   update(set) {
     const operation = this.pending.then(async () => {
@@ -118,7 +123,7 @@ export function registerSettings(server, store, bridge) {
   createSettings(facade).register({
     readTool: 'remote_settings_read', updateTool: 'remote_settings_update', fields: settingsFields,
     layout: [
-      { kind: 'group', title: '\u8fde\u63a5', items: [{ kind: 'property', property: 'mode' }] },
+      { kind: 'group', title: '\u8fde\u63a5', items: ['mode', 'deviceName'].map((property) => ({ kind: 'property', property })) },
       { kind: 'group', title: 'SSH', items: ['sshTargets', 'allowWrite'].map((property) => ({ kind: 'property', property })) },
       { kind: 'group', title: '\u670d\u52a1\u4e2d\u7ee7', items: ['relayUrl', 'relayToken', 'viewerId'].map((property) => ({ kind: 'property', property })) },
       { kind: 'group', title: '\u9ad8\u7ea7', items: [{ kind: 'property', property: 'configFile' }] },

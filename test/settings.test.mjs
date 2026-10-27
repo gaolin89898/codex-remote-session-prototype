@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { hostname, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -61,6 +61,26 @@ test('SSH settings keep stable computer IDs and apply without restarting the plu
   assert.equal(closed, 2);
   await store.reset();
   assert.deepEqual(await bridge.call('listHosts'), []);
+});
+
+test('device names preserve older settings, support Unicode, and default to the computer name', async (t) => {
+  const store = await storeFor(t);
+  const token = 'legacy-controller-token-'.repeat(2);
+  await store.update({ relayToken: token, viewerId: 'viewer' });
+  const legacy = JSON.parse(await readFile(store.file, 'utf8'));
+  delete legacy.deviceName;
+  await writeFile(store.file, JSON.stringify(legacy));
+  assert.equal((await store.read()).deviceName, hostname());
+  assert.equal((await store.load()).relayToken, token);
+  const renamed = await store.update({ deviceName: '  \u529e\u516c\u7535\u8111  ' });
+  assert.equal(renamed.deviceName, '\u529e\u516c\u7535\u8111');
+  await store.update({ allowWrite: true });
+  assert.equal((await store.read()).deviceName, '\u529e\u516c\u7535\u8111');
+  assert.equal((await store.load()).viewerId, 'viewer');
+  await assert.rejects(store.update({ deviceName: 'x'.repeat(121) }));
+  await assert.rejects(store.update({ deviceName: 'invalid\u0000name' }));
+  await store.update({ deviceName: '  ' });
+  assert.equal((await store.read()).deviceName, hostname());
 });
 
 test('empty drafts can be saved before choosing a connection and launcher overrides are preserved', async (t) => {
@@ -124,6 +144,8 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     assert.deepEqual(capability, { readTool: 'remote_settings_read', updateTool: 'remote_settings_update' });
     const read = await client.callTool({ name: capability.readTool, arguments: {} });
     assert.equal(read.structuredContent.values.mode, '\u672a\u8fde\u63a5');
+    assert.equal(read.structuredContent.values.deviceName, hostname());
+    assert.ok(read.structuredContent.layout.some((group) => group.items.some((item) => item.property === 'deviceName')));
     assert.ok(read.structuredContent.layout.some((group) => group.items.some((item) => item.tool === 'remote_test_connection')));
     const nativeTools = (await client.listTools()).tools.filter((tool) => /remote_(settings|test_connection)/.test(tool.name));
     assert.equal(nativeTools.length, 4);
@@ -132,13 +154,14 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     assert.equal(unconfigured.isError, true);
     const token = 'native-settings-test-token-'.repeat(2);
     const updated = await client.callTool({ name: capability.updateTool, arguments: { set: {
-      mode: 'SSH \u76f4\u8fde', sshTargets: 'office', relayToken: token,
+      mode: 'SSH \u76f4\u8fde', sshTargets: 'office', relayToken: token, deviceName: '\u529e\u516c\u7535\u8111',
     } } });
     assert.equal(updated.isError, undefined);
     assert.equal(JSON.stringify(updated).includes(token), false);
     const hosts = await client.callTool({ name: 'remote_hosts', arguments: {} });
     assert.equal(JSON.parse(hosts.content[0].text).hosts[0].name, 'office');
     const reloaded = await client.callTool({ name: capability.readTool, arguments: {} });
+    assert.equal(reloaded.structuredContent.values.deviceName, '\u529e\u516c\u7535\u8111');
     assert.equal(JSON.stringify(reloaded).includes(token), false);
     const invalid = await client.callTool({ name: capability.updateTool, arguments: { set: { sshTargets: '-oProxyCommand=invalid' } } });
     assert.equal(invalid.isError, true);

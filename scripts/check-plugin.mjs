@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +25,7 @@ async function cli(args) {
   })).stdout;
 }
 
-const client = new Client({ name: 'plugin-package-check', version: '0.4.1' });
+const client = new Client({ name: 'plugin-package-check', version: '0.4.2' });
 const appServer = new AppServerRpc(spec.command, spec.args, { cwd: testHome, env, timeoutMs: 45000 });
 try {
   await cli(['marketplace', 'add', source]);
@@ -63,6 +63,8 @@ try {
   });
   const settings = await client.callTool({ name: 'remote_settings_read', arguments: {} });
   assert.equal(settings.structuredContent.values.mode, '\u672a\u8fde\u63a5');
+  assert.equal(typeof settings.structuredContent.values.deviceName, 'string');
+  assert.ok(settings.structuredContent.layout.some((group) => group.items.some((item) => item.property === 'deviceName')));
   assert.equal(tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
   assert.equal(client.getServerCapabilities().resources, undefined);
   const discovered = await client.callTool({ name: 'remote_hosts', arguments: {} });
@@ -74,5 +76,11 @@ try {
 } finally {
   await client.close();
   await appServer.close();
-  await rm(testHome, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  const cleanup = { recursive: true, force: true, maxRetries: 10, retryDelay: 100 };
+  for (const entry of await readdir(testHome)) await rm(path.join(testHome, entry), cleanup);
+  try { await rm(testHome, cleanup); }
+  catch (error) {
+    if (error.code !== 'EBUSY' || (await readdir(testHome)).length) throw error;
+    console.warn(`Plugin installation removed; Windows is still holding the empty temporary directory: ${testHome}`);
+  }
 }

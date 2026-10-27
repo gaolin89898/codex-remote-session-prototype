@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { SettingsStore } from '../src/settings.mjs';
 import { startRelay } from '../src/relay-server.mjs';
 import { connectAgent } from '../src/relay-agent.mjs';
 import { RelayConnection } from '../src/relay-connection.mjs';
@@ -51,6 +55,36 @@ test('relay viewer hides its own computer and replaces agent-provided native lin
   await assert.rejects(own.threads('pc'), /hidden/);
   assert.equal(other.listHosts()[0].transport, 'relay');
   assert.equal((await other.threads('pc')).data[0].nativeUrl, null);
+});
+
+test('agent device names follow plugin settings without disconnecting or changing identity', async (t) => {
+  const { url } = await setup(t);
+  const home = await mkdtemp(path.join(tmpdir(), 'relay-device-name-'));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const settings = new SettingsStore({ CODEX_HOME: home });
+  await settings.update({ deviceName: '\u529e\u516c\u7535\u8111' });
+  const agent = await connectAgent({ url, token: 'a'.repeat(32), id: 'pc', name: 'Old computer' }, {
+    close: async () => {},
+  }, { settings, namePollIntervalMs: 20 });
+  t.after(() => agent.close());
+  const client = await clientFor(t, url);
+  assert.equal(client.hosts[0].name, '\u529e\u516c\u7535\u8111');
+  const socket = agent.connection.socket;
+  const renamed = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { client.off('hosts', changed); reject(new Error('Device name did not update')); }, 3000);
+    function changed(hosts) {
+      if (hosts[0]?.name === '\u5bb6\u91cc\u7684\u7535\u8111') {
+        clearTimeout(timer); client.off('hosts', changed); resolve();
+      }
+    }
+    client.on('hosts', changed);
+  });
+  await settings.update({ deviceName: '\u5bb6\u91cc\u7684\u7535\u8111' });
+  await renamed;
+  assert.equal(agent.connection.socket, socket);
+  assert.equal(agent.connection.connected, true);
+  assert.equal(client.hosts[0].id, 'pc');
+  assert.equal(client.hosts[0].allowWrite, false);
 });
 
 test('agent loss rejects outstanding calls and removes the computer from discovery', async (t) => {

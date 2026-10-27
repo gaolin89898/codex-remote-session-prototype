@@ -14,7 +14,7 @@ const config = JSON.parse(await readFile(configFile, 'utf8'));
 const observer = await new RelayBridge({ ...config, viewerId: 'deployment-verifier' }).startConnection();
 const local = new SessionBridge([{ id: 'local', transport: 'local' }]);
 const own = await new RelayBridge(config).startConnection();
-const client = new Client({ name: 'relay-deployment-check', version: '0.4.1' });
+const client = new Client({ name: 'relay-deployment-check', version: '0.4.2' });
 const report = { mode: 'relay', checks: [] };
 try {
   if (!observer.listHosts().length) await new Promise((resolve, reject) => {

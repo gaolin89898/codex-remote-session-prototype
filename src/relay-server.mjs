@@ -9,6 +9,9 @@ function matches(value, expected) {
   const a = Buffer.from(value), b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+function validName(value) {
+  return typeof value === 'string' && value.trim() && value.length <= 120 && !/[\x00-\x1f\x7f]/.test(value);
+}
 
 export async function startRelay(config, options = {}) {
   if (typeof config.controllerToken !== 'string' || config.controllerToken.length < 32) throw new Error('A controller token of at least 32 characters is required');
@@ -66,9 +69,13 @@ export async function startRelay(config, options = {}) {
         if (role === 'agent') {
           const agent = agents.get(id);
           if (message.type === 'hello' && !agent.ready) {
-            if (typeof message.name !== 'string' || !message.name.trim() || message.name.length > 120) { ws.close(1008, 'Invalid name'); return; }
+            if (!validName(message.name)) { ws.close(1008, 'Invalid name'); return; }
             Object.assign(agent, { ready: true, name: message.name, allowWrite: config.agents[id].allowWrite === true && message.allowWrite === true });
             send(ws, { type: 'ready' });
+            broadcast();
+          } else if (message.type === 'rename' && agent.ready) {
+            if (!validName(message.name)) { ws.close(1008, 'Invalid name'); return; }
+            agent.name = message.name;
             broadcast();
           } else if (message.type === 'response') {
             const request = pending.get(message.id);

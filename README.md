@@ -29,11 +29,14 @@ This is a community Git marketplace, not an official OpenAI directory listing.
 Open this plugin's settings in Codex to configure the connection. The native settings form includes:
 
 - Connection mode: disconnected, direct SSH, relay, or an external configuration file.
+- Device name: defaults to this computer's hostname and supports custom names, including Chinese.
 - SSH aliases or `user@host` targets, separated by commas, and a conversation-write toggle.
 - Relay URL, a write-only controller token, and the viewing computer's optional agent ID.
 - An advanced configuration file path, a connection test, and a clear-settings action.
 
 Changes are saved under `remote-session/settings.json` in your Codex home, outside the installed plugin. They take effect without restarting the plugin. Blank token input preserves the saved token; clearing settings removes it and disconnects the old connection. Connection tests do not send prompts or start model inference. Settings remain available when the relay is offline.
+
+The computer agent uses the device name saved by the plugin. Changes are broadcast to connected viewers without disconnecting the agent or changing its ID. When no custom name is saved, the agent uses its configuration's `name`, or the computer's hostname. Updating the name does not start a computer agent; run the agent on each computer you want to make available. Relays must run version 0.4.2 or newer to broadcast name changes.
 
 The plugin advertises the `openai/settings` extension for the host to render the form; it does not launch a separate conversation page or web server. This requires a Codex desktop version supporting native plugin settings. Settings tools are restricted to the app UI and do not return saved tokens.
 
