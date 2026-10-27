@@ -3,13 +3,15 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { SettingsStore, registerSettings } from './settings.mjs';
 import { ConfiguredBridge } from './configured-bridge.mjs';
+import { registerComputers } from './computers.mjs';
 
 const store = new SettingsStore();
 const bridge = new ConfiguredBridge(store);
 const icons = typeof __REMOTE_ICONS__ !== 'undefined' ? __REMOTE_ICONS__ :
   (await import('./icons.mjs')).remoteSessionIcons;
-const server = new McpServer({ name: 'codex-remote-session', version: '0.4.3', icons });
+const server = new McpServer({ name: 'codex-remote-session', version: '0.5.0', icons });
 registerSettings(server, store, bridge);
+registerComputers(server, store, bridge, icons);
 const host = z.string().min(1).max(64).describe('Configured host ID from remote_hosts');
 const thread = z.string().min(1).max(200);
 

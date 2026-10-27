@@ -26,6 +26,10 @@ export class ConfiguredBridge {
     return acquired.then(async (record) => {
       const { bridge, config } = record;
       try {
+        if (method === 'discoverHosts') {
+          if (config.relay) await bridge.connection.check();
+          return bridge.listHosts();
+        }
         if (method === 'testConnection') {
           if (config.relay) await bridge.connection.check();
           const hosts = bridge.listHosts();

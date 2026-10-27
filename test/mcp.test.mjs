@@ -24,18 +24,24 @@ for (const entry of ['../src/mcp.mjs', '../dist/plugin/server.mjs']) {
     t.after(async () => { await client.close(); await rm(home, { recursive: true, force: true }); });
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 11);
+    assert.equal(tools.tools.length, 13);
     assert.deepEqual(client.getServerCapabilities().extensions['openai/settings'], {
       readTool: 'remote_settings_read', updateTool: 'remote_settings_update',
     });
     assert.equal(tools.tools.some((tool) => ['remote_open', 'remote_native_open'].includes(tool.name)), false);
-    assert.equal(tools.tools.some((tool) => tool._meta?.['openai/ui']?.entrypoints), false);
+    const sidebar = tools.tools.find((tool) => tool.name === 'remote_computers');
+    assert.deepEqual(sidebar._meta['openai/ui'].entrypoints, [{ type: 'global', header: { enabled: false } }]);
+    assert.deepEqual(sidebar._meta.ui.visibility, ['app']);
     const resources = (await client.listResources()).resources;
-    assert.deepEqual(resources.map((resource) => resource.uri), ['ui://remote-session/connection-test.html']);
+    assert.deepEqual(resources.map((resource) => resource.uri), ['ui://remote-session/connection-test.html', 'ui://remote-session/computers.html']);
     const testTool = tools.tools.find((tool) => tool.name === 'remote_test_connection');
     assert.equal(testTool._meta.ui.resourceUri, resources[0].uri);
     assert.deepEqual(testTool._meta.ui.visibility, ['app']);
-    assert.ok(tools.tools.filter((tool) => !/remote_(settings|test_connection)/.test(tool.name)).every((tool) => !tool._meta?.ui));
+    assert.ok(tools.tools.filter((tool) => !/remote_(settings|test_connection|computers|native_action)/.test(tool.name)).every((tool) => !tool._meta?.ui));
+    const computerView = (await client.readResource({ uri: sidebar._meta.ui.resourceUri })).contents[0];
+    assert.equal(computerView.mimeType, 'text/html;profile=mcp-app');
+    const invalidLink = await client.callTool({ name: 'remote_native_action', arguments: { action: 'connect', sshAlias: 'valid', projectPath: '../relative' } });
+    assert.equal(invalidLink.isError, true);
     const view = (await client.readResource({ uri: resources[0].uri })).contents[0];
     assert.equal(view.mimeType, 'text/html;profile=mcp-app');
     assert.match(view.text, /<html lang="zh-CN">/);

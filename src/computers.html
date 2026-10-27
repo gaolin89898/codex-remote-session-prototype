@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Remote computers</title>
+  <style>
+    :root { color-scheme: light dark; font-family: var(--font-sans, "Segoe UI", "Microsoft YaHei", sans-serif); color: var(--color-text-primary, light-dark(#202020, #ededed)); background: var(--color-background-primary, light-dark(#fff, #212121)); letter-spacing: 0; --muted: var(--color-text-secondary, light-dark(#6b6b6b, #adadad)); --border: var(--color-border-primary, light-dark(#e5e5e5, #414141)); --hover: var(--color-background-secondary, light-dark(#f5f5f5, #303030)); }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: 100%; max-width: 760px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    h1 { font-size: 18px; line-height: 28px; font-weight: 600; margin: 0; }
+    nav { display: flex; align-items: center; gap: 4px; }
+    svg { width: 17px; height: 17px; flex: 0 0 auto; }
+    button { font: inherit; font-size: 13px; color: inherit; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; min-height: 34px; padding: 0 12px; display: inline-flex; justify-content: center; align-items: center; gap: 7px; }
+    button:hover:enabled { background: var(--hover); }
+    button:disabled { opacity: .45; cursor: default; }
+    button:focus-visible, input:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    .icon-button { width: 32px; height: 32px; min-height: 32px; padding: 0; flex: 0 0 32px; border-color: transparent; }
+    ul { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--border); }
+    li { border-bottom: 1px solid var(--border); }
+    .computer-row { display: flex; align-items: center; gap: 12px; min-height: 58px; }
+    .computer-toggle { flex: 1; min-width: 0; border: 0; padding: 10px 4px; justify-content: flex-start; text-align: left; gap: 12px; }
+    .computer-icon { width: 20px; height: 20px; color: var(--muted); }
+    .computer-name { font-size: 14px; line-height: 22px; overflow-wrap: anywhere; min-width: 0; }
+    .chevron { width: 13px; height: 13px; color: var(--muted); }
+    .chevron.expanded { transform: rotate(180deg); }
+    .connection-state { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .connection-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .online { color: light-dark(#177e70, #74d5c5); }
+    .computer-details { position: relative; padding: 0 4px 16px 36px; }
+    .connection-form { display: grid; gap: 12px; padding-top: 4px; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; line-height: 18px; min-width: 0; }
+    input { width: 100%; min-width: 0; height: 36px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--color-text-primary, light-dark(#202020, #ededed)); background: transparent; border: 1px solid var(--border); border-radius: 6px; }
+    input::placeholder { color: var(--muted); }
+    .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .primary { background: light-dark(#202020, #ededed); color: light-dark(#fff, #202020); border-color: transparent; }
+    .primary:hover:enabled { background: light-dark(#454545, #d0d0d0); }
+    .forget { position: absolute; bottom: 16px; left: 36px; color: var(--muted); }
+    .add-connection { padding: 0 0 18px; }
+    .notice, .warning, .error { font-size: 13px; line-height: 21px; overflow-wrap: anywhere; margin: 0 0 12px; }
+    .notice { color: light-dark(#177e70, #74d5c5); }
+    .warning { color: light-dark(#8a6500, #e3c075); }
+    .error { color: light-dark(#b52d2d, #fa9090); }
+    .connection-form .error { margin: 0; }
+    .empty { min-height: 100px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 14px; }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinning { animation: none; } }
+    @media (max-width: 400px) { main { padding: 16px; } .computer-row { gap: 8px; } .computer-toggle { gap: 8px; } .computer-details { padding-left: 4px; } .forget { left: 4px; } }
+  </style>
+</head>
+<body><div id="root"></div><script>__COMPUTERS_SCRIPT__</script></body>
+</html>

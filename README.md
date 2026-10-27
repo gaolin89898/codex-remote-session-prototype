@@ -2,7 +2,7 @@
 
 A Codex desktop plugin for reading and continuing conversations on computers you configure. Connect directly over SSH or through a self-hosted relay. No server, account, token, or local computer is configured by default.
 
-The plugin provides seven conversation tools through MCP and a native plugin settings form. Integration with the desktop's native conversation interface and computer selector remains unfinished.
+The plugin adds an independent **远程电脑** sidebar entry, native plugin settings, and seven conversation tools through MCP. The sidebar hands SSH connections and remote projects to Codex's native connection system.
 
 ## Install from the Git marketplace
 
@@ -23,6 +23,16 @@ codex plugin add codex-remote-session@codex-remote-session-lab
 You can also add `https://github.com/gaolin89898/codex-remote-session-prototype.git` as a Git marketplace in Codex. The committed package at `plugins/codex-remote-session` includes its dependencies; installation does not require cloning the source or running `npm install`.
 
 This is a community Git marketplace, not an official OpenAI directory listing.
+
+## Remote computers
+
+Open **远程电脑** in the Codex sidebar. The compact list discovers concrete aliases in your local `~/.ssh/config`, including `Include` files, and shows configured remote computers. Wildcard aliases and the local computer are excluded. Use **+** to add a connection, or expand a computer to set its SSH alias and optional absolute remote project directory.
+
+Connecting opens Codex's native SSH connection settings and enables that alias. With a project directory, Codex connects, requests remote folder access when needed, and opens the native remote project. Existing native connections are reused by alias; the plugin does not invent a native host ID or replace the native conversation menu. Install and authenticate Codex on the target computer and make SSH access available first.
+
+Relay devices can be bound to an SSH alias reachable from this desktop, including through a VPN or SSH jump host. Relay connectivity alone cannot provide Codex's native SSH transport. **中继在线** refers only to relay discovery; after dispatch, connection progress and authentication are handled by Codex. Saved bindings remain available when relay discovery fails.
+
+Aliases and project preferences are saved in `remote-session/native-connections.json` inside your Codex home. The plugin does not edit SSH configuration, Codex state files, or relay credentials directly; Codex handles native connection registration. The deep link was verified against the route parser in Codex desktop build `26.1021.3705.0`; a real remote project connection still requires a reachable, authenticated target.
 
 ## Plugin settings
 
@@ -108,11 +118,11 @@ npm test
 npm run check:plugin
 ```
 
-`npm run check:ui` checks the connection-test dialog in a simulated MCP App host with desktop and narrow viewports, light and dark themes, loading, success, offline devices, errors, and retry. It uses Microsoft Edge on Windows; set `PLAYWRIGHT_CHANNEL` to another installed Chromium channel when needed. Screenshots are written under ignored `.local/connection-ui`. This does not automate the Codex desktop UI.
+`npm run check:ui` checks both the connection-test dialog and the remote-computer view in a simulated MCP App host with desktop and narrow viewports, light and dark themes, loading, discovery, binding, native dispatch, validation, errors, and retry. It uses Microsoft Edge on Windows; set `PLAYWRIGHT_CHANNEL` to another installed Chromium channel when needed. Screenshots are written under ignored `.local/connection-ui` and `.local/computers-ui`. This does not automate the Codex desktop UI or confirm a real remote connection.
 
 `build` regenerates the committed portable plugin and the ignored `dist` output. It does not read deployment configuration or embed machine paths. Commit the generated plugin whenever its source changes.
 
-`check:plugin` installs into a temporary, empty Codex home and uses Codex app-server discovery to verify the installed server and native settings tools. It also verifies seven conversation tools, four app-only settings tools, one settings-only connection-test resource, and no configured hosts. Conversation tools have no UI entrypoints. The check runs outside the plugin directory so incorrect relative paths fail. It removes the temporary installation afterward. To check the published Git marketplace:
+`check:plugin` installs into a temporary, empty Codex home and uses Codex app-server discovery to verify the installed server, native settings, and the global sidebar entry. It verifies seven conversation tools, six app-only tools, two UI resources, and no configured conversation hosts. Conversation tools have no UI entrypoints. The check runs outside the plugin directory so incorrect relative paths fail. It removes the temporary installation afterward. To check the published Git marketplace:
 
 ```powershell
 npm run check:plugin -- --source=git@github.com:gaolin89898/codex-remote-session-prototype.git

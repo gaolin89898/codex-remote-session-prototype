@@ -30,6 +30,10 @@ test('conversation IDs cannot inject paths or protocol parameters', () => {
 test('native opening passes only a validated URL to a fixed operating-system command', async () => {
   let invocation;
   await openNativeThread({ transport: 'local' }, 'thread-123', async (...args) => { invocation = args; });
-  assert.deepEqual(invocation[1], ['codex://threads/thread-123']);
+  if (process.platform === 'win32') {
+    assert.equal(invocation[0], 'powershell.exe');
+    assert.equal(invocation[2].env.CODEX_REMOTE_NATIVE_URL, 'codex://threads/thread-123');
+    assert.equal(invocation[1].some((argument) => argument.includes('codex://')), false);
+  } else assert.deepEqual(invocation[1], ['codex://threads/thread-123']);
   assert.equal(invocation[2].windowsHide, true);
 });

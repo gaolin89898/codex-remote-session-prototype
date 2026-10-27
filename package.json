@@ -1,6 +1,6 @@
 {
   "name": "codex-remote-session-prototype",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "repository": {
@@ -15,7 +15,7 @@
     "test": "node --test test/*.test.mjs",
     "build": "node scripts/build.mjs",
     "check:plugin": "node scripts/check-plugin.mjs",
-    "check:ui": "node scripts/check-connection-ui.mjs",
+    "check:ui": "node scripts/check-connection-ui.mjs && node scripts/check-computers-ui.mjs",
     "deploy": "node scripts/deploy.mjs",
     "mcp": "node src/mcp.mjs"
   },
@@ -26,6 +26,7 @@
     "lucide-react": "1.61.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "ssh-config": "5.3.0",
     "ws": "8.22.0",
     "zod": "4.6.7"
   },

@@ -1,6 +1,6 @@
 {
   "name": "codex-remote-session",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Read or continue Codex conversations over SSH or a self-hosted relay.",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",

@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom';
 import { App, applyDocumentTheme, applyHostStyleVariables } from '@modelcontextprotocol/ext-apps';
 import { CircleCheck, CircleX, LoaderCircle, RotateCw } from 'lucide-react';
 
-const app = new App({ name: 'Remote connection test', version: '0.4.3' }, {}, { autoResize: true });
+const app = new App({ name: 'Remote connection test', version: '0.5.0' }, {}, { autoResize: true });
 let setResult, setReady;
 let pending = true;
 let initialTimer;
